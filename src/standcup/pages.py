@@ -12,6 +12,7 @@ from standcup.charts import (
     create_match_timeline,
     create_win_rate_chart,
 )
+from standcup.matchmaker import calculate_player_strengths, generate_match_suggestions
 from standcup.models import StandcupData
 from standcup.utils import calculate_head_to_head
 
@@ -223,3 +224,180 @@ def render_head_to_head_page(data: StandcupData) -> None:
 
         st.subheader("Head-to-Head Win Rates")
         st.plotly_chart(create_head_to_head_chart(player1, player2, p1_win_rate, p2_win_rate), use_container_width=True)
+
+
+def render_match_maker_page(data: StandcupData, stats_df: pd.DataFrame) -> None:
+    """Render the match maker page."""
+    st.header("🎯 Match Maker")
+    st.markdown("Generate balanced matches based on player statistics and pairing history.")
+
+    if len(data.players) < 2:
+        st.warning("Need at least 2 players to generate matches.")
+        return
+
+    selection_result = _render_player_selection_section(data)
+    if selection_result:
+        _render_match_suggestions_section(data, stats_df, selection_result)
+    _render_player_strengths_section(data, stats_df)
+    _render_match_making_tips()
+
+
+def _render_player_selection_section(data: StandcupData) -> tuple[list[str], str, int] | None:
+    """Render player selection and match configuration."""
+    st.subheader("Select Available Players")
+    player_names = [p.name for p in data.players]
+
+    selected_players = st.multiselect(
+        "Choose players who are available to play:",
+        options=player_names,
+        default=player_names,
+        help="Select all players who are currently available for a match",
+    )
+
+    if len(selected_players) < 2:
+        st.warning("Please select at least 2 players.")
+        return None
+
+    col1, col2 = st.columns(2)
+    with col1:
+        match_type = st.radio("Match Type:", ["singles", "doubles"], index=1, help="Singles: 1v1, Doubles: 2v2")
+    with col2:
+        num_suggestions = st.slider(
+            "Number of suggestions:", min_value=1, max_value=10, value=5, help="How many match suggestions to generate"
+        )
+
+    required_players = 2 if match_type == "singles" else 4
+    if len(selected_players) < required_players:
+        st.warning(f"Need at least {required_players} players for {match_type} matches.")
+        return None
+
+    return selected_players, match_type, num_suggestions
+
+
+def _render_match_suggestions_section(
+    data: StandcupData, stats_df: pd.DataFrame, selection_result: tuple[list[str], str, int]
+) -> None:
+    """Render the match suggestions generation section."""
+    selected_players, match_type, num_suggestions = selection_result
+    player_name_to_id = {p.name: p.id for p in data.players}
+
+    if st.button("🎲 Generate Match Suggestions", type="primary"):
+        selected_player_ids = [player_name_to_id[name] for name in selected_players]
+
+        with st.spinner("Generating optimal matches..."):
+            suggestions = generate_match_suggestions(data, selected_player_ids, match_type, num_suggestions)
+
+        if not suggestions:
+            st.error("No match suggestions could be generated.")
+            return
+
+        _display_match_suggestions(data, suggestions)
+
+
+def _display_match_suggestions(data: StandcupData, suggestions) -> None:
+    """Display the generated match suggestions."""
+    st.subheader("🏆 Suggested Matches")
+    st.markdown("Matches are ranked by quality score (balance + variety).")
+
+    for i, suggestion in enumerate(suggestions, 1):
+        with st.expander(f"Match {i} (Score: {suggestion.score:.3f})", expanded=i == 1):
+            _render_single_match_suggestion(data, suggestion)
+
+
+def _render_single_match_suggestion(data: StandcupData, suggestion) -> None:
+    """Render a single match suggestion."""
+    col1, col2, col3 = st.columns([2, 1, 2])
+
+    # Team 1
+    with col1:
+        team1_names = [next(p.name for p in data.players if p.id == pid) for pid in suggestion.team1_players]
+        st.markdown("**Team 1:**")
+        for name in team1_names:
+            st.write(f"• {name}")
+
+    # VS
+    with col2:
+        st.markdown(
+            "<div style='text-align: center; font-size: 2em; font-weight: bold; margin-top: 20px;'>VS</div>",
+            unsafe_allow_html=True,
+        )
+
+    # Team 2
+    with col3:
+        team2_names = [next(p.name for p in data.players if p.id == pid) for pid in suggestion.team2_players]
+        st.markdown("**Team 2:**")
+        for name in team2_names:
+            st.write(f"• {name}")
+
+    # Reasoning
+    st.markdown("**Why this match:**")
+    st.info(suggestion.reasoning)
+
+
+def _render_player_strengths_section(data: StandcupData, stats_df: pd.DataFrame) -> None:
+    """Render the player strengths information section."""
+    st.subheader("📊 Player Strengths")
+    st.markdown("Understanding how players are rated for match making:")
+
+    if stats_df.empty:
+        return
+
+    strengths = calculate_player_strengths(data)
+    if not strengths:
+        return
+
+    strength_data = _build_strength_data(data, stats_df, strengths)
+    if strength_data:
+        strength_df = pd.DataFrame(strength_data).sort_values("Strength", ascending=False)
+        st.dataframe(strength_df, use_container_width=True)
+        _render_strength_explanation()
+
+
+def _build_strength_data(data: StandcupData, stats_df: pd.DataFrame, strengths: dict) -> list[dict]:
+    """Build strength data for display."""
+    strength_data = []
+    for player in data.players:
+        if player.id in strengths:
+            player_stats = stats_df[stats_df["player_id"] == player.id]
+            if not player_stats.empty:
+                row = player_stats.iloc[0]
+                strength_data.append({
+                    "Player": player.name,
+                    "Strength": f"{strengths[player.id]:.3f}",
+                    "Win Rate": f"{row['win_rate']:.1f}%",
+                    "Matches": int(row["matches_played"]),
+                    "Goal Diff": f"{row['goal_difference']:+.0f}",
+                })
+    return strength_data
+
+
+def _render_strength_explanation() -> None:
+    """Render explanation of how strength is calculated."""
+    st.markdown("""
+    **How strength is calculated:**
+    - 70% win rate performance
+    - 30% goal contribution (goals for vs goals against)
+    - Weighted by experience (players with fewer matches get adjusted ratings)
+    - Scale: 0.1 (weakest) to 1.0 (strongest)
+    """)
+
+
+def _render_match_making_tips() -> None:
+    """Render match making tips section."""
+    with st.expander("💡 Match Making Tips"):
+        st.markdown("""
+        **How the match maker works:**
+
+        🎯 **Balance (70% of score):** Matches teams with similar combined strength ratings
+
+        🔄 **Variety (30% of score):** Promotes new pairings and reduces repetitive matches
+
+        📈 **Player Strength:** Calculated from win rate, goal difference, and experience
+
+        🤝 **Pairing History:** Tracks teammate and opponent combinations to encourage variety
+
+        **Tips for best results:**
+        - Have at least 10 matches of history for accurate ratings
+        - Select 4+ players for doubles to get multiple suggestions
+        - Use the suggestions as a starting point - adjust based on player preferences
+        """)

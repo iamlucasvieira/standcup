@@ -7,6 +7,7 @@ import streamlit as st
 from standcup.pages import (
     render_head_to_head_page,
     render_match_history_page,
+    render_match_maker_page,
     render_overview_page,
     render_player_stats_page,
 )
@@ -28,7 +29,9 @@ def main() -> None:
 
     # Sidebar for navigation
     st.sidebar.title("Navigation")
-    page = st.sidebar.selectbox("Choose a page", ["Overview", "Player Stats", "Match History", "Head-to-Head"])
+    page = st.sidebar.selectbox(
+        "Choose a page", ["Overview", "Player Stats", "Match History", "Head-to-Head", "Match Maker"]
+    )
 
     # Load data
     try:
@@ -59,6 +62,8 @@ def main() -> None:
         render_match_history_page(matches_df)
     elif page == "Head-to-Head":
         render_head_to_head_page(data)
+    elif page == "Match Maker":
+        render_match_maker_page(data, stats_df)
 
 
 if __name__ == "__main__":
