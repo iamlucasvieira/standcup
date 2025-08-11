@@ -129,9 +129,9 @@ def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
     # Get player names mapping
     players_dict = {p.id: p.name for p in data.players}
 
-    # Convert date to datetime
+    # Convert date to datetime and extract date only (no time)
     player_matches = player_matches.copy()
-    player_matches["date"] = pd.to_datetime(player_matches["date"])
+    player_matches["date"] = pd.to_datetime(player_matches["date"]).dt.date
 
     # Sort by date to get chronological order
     player_matches = player_matches.sort_values("date")
@@ -148,12 +148,23 @@ def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
         player_data["cumulative_matches"] = range(1, len(player_data) + 1)
         player_data["win_rate"] = (player_data["cumulative_wins"] / player_data["cumulative_matches"] * 100).round(1)
 
-        # Only show players with at least 3 matches for meaningful trends
-        if len(player_data) >= 3:
+        # Group by date and take the last (end-of-day) win rate for each date
+        # This eliminates multiple points on the same day
+        daily_win_rates = (
+            player_data.groupby("date")
+            .agg({
+                "win_rate": "last",  # End-of-day win rate
+                "cumulative_matches": "last",  # Total matches by end of day
+            })
+            .reset_index()
+        )
+
+        # Show all players with at least 1 match
+        if len(player_data) >= 1:
             fig.add_trace(
                 go.Scatter(
-                    x=player_data["date"],
-                    y=player_data["win_rate"],
+                    x=daily_win_rates["date"],
+                    y=daily_win_rates["win_rate"],
                     mode="lines+markers",
                     name=player_name,
                     line={"width": 3},
@@ -161,10 +172,9 @@ def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
                     hovertemplate=f"<b>{player_name}</b><br>"
                     + "Date: %{x}<br>"
                     + "Win Rate: %{y:.1f}%<br>"
-                    + "Matches Played: "
-                    + player_data["cumulative_matches"].astype(str)
-                    + "<br>"
+                    + "Matches Played: %{customdata}<br>"
                     + "<extra></extra>",
+                    customdata=daily_win_rates["cumulative_matches"],
                 )
             )
 
