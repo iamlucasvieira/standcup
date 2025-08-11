@@ -1,0 +1,40 @@
+# Standcup Table Football Data
+# This file contains all players, matches, and tournaments
+
+players:
+  - id: "lucas"
+    name: "Lucas"
+
+  - id: "luc"
+    name: "Luc"
+
+  - id: "nordin"
+    name: "Nordin"
+
+  - id: "ryan"
+    name: "Ryan"
+
+matches:
+  - id: "match_001"
+    date: "2025-08-11T14:30:00"
+    team1:
+      players: ["ryan", "lucas"]
+    team2:
+      players: ["nordin", "luc"]
+    team1_score: 10
+    team2_score: 7
+    game_type: "casual"
+    duration_minutes: 15
+    notes: "Great comeback by Nordin in the second half"
+
+  - id: "match_002"
+    date: "2024-08-11T15:00:00"
+    team1:
+      players: ["lucas", "luc"]
+    team2:
+      players: ["nordin", "ryan"]
+    team1_score: 8
+    team2_score: 10
+    game_type: "casual"
+    duration_minutes: 20
+    notes: "Intense doubles match!"
