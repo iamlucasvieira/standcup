@@ -213,14 +213,18 @@ def generate_match_suggestions(
 
 def render_match_maker_page(data: StandcupData, stats_df: pd.DataFrame) -> None:
     """Render the match maker page."""
-    st.markdown("### 🎯 Smart Match Maker")
+    st.markdown("### 🤖 Elite Match Making Engine")
     st.markdown(
-        "Generate perfectly balanced matches using AI-powered analytics that consider player strengths, recent performance, and pairing history."
+        "🏆 **Welcome to the championship forge!** I'll craft legendary matchups using advanced warrior analytics, battle history, and the ancient art of perfect balance!"
     )
 
     if len(data.players) < 2:
-        st.error("🚫 Need at least 2 players to generate matches.")
-        st.info("💡 Add more players to your league to use the match maker!")
+        st.error("🏆 **The arena needs more warriors!**")
+        st.info("""
+        🚀 **Ready to build your league?** Every great championship started with just a few brave souls.
+
+        🎯 Add more fighters to unlock the power of epic match making!
+        """)
         return
 
     st.divider()

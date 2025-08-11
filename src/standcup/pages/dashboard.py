@@ -191,10 +191,72 @@ def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
     return fig
 
 
+def get_league_status_message(stats_df: pd.DataFrame, matches_df: pd.DataFrame) -> tuple[str, str]:
+    """Generate dynamic status message based on league activity."""
+    if stats_df.empty or matches_df.empty:
+        return (
+            "🚀 Ready to Kick Off!",
+            "Your table football adventure is about to begin! Start playing matches to see epic stats and rivalries unfold.",
+        )
+
+    total_matches = len(matches_df)
+    avg_goals = matches_df["total_goals"].mean() if not matches_df.empty else 0
+    top_win_rate = stats_df["win_rate"].max()
+
+    if total_matches < 10:
+        return (
+            "🌱 Growing League",
+            f"Just getting started with {total_matches} matches! The competition is heating up...",
+        )
+    elif total_matches < 50:
+        return (
+            "⚽ Active League",
+            f"{total_matches} matches played! The battle for supremacy continues with an average of {avg_goals:.1f} goals per match!",
+        )
+    elif avg_goals > 8:
+        return (
+            "🔥 High-Octane League",
+            f"This league is on fire! {avg_goals:.1f} goals per match - pure attacking football at its finest!",
+        )
+    elif top_win_rate > 80:
+        return (
+            "👑 Dominated League",
+            f"We have a champion! Someone's absolutely crushing it with {top_win_rate:.1f}% win rate!",
+        )
+    else:
+        return (
+            "⚔️ Competitive League",
+            f"Epic battles across {total_matches} matches! Every game matters in this tight competition!",
+        )
+
+
+def get_top_player_personality(stats_df: pd.DataFrame) -> str:
+    """Generate personality text for top player metric."""
+    if stats_df.empty:
+        return "No champion yet"
+
+    top_idx = stats_df["win_rate"].idxmax()
+    win_rate = stats_df.loc[top_idx, "win_rate"]
+    matches = stats_df.loc[top_idx, "matches_played"]
+
+    if win_rate >= 90 and matches >= 10:
+        return "🐐 Legendary!"
+    elif win_rate >= 80:
+        return "👑 Dominating!"
+    elif win_rate >= 70:
+        return "🔥 On fire!"
+    elif win_rate >= 60:
+        return "⭐ Solid player!"
+    else:
+        return "📈 Improving!"
+
+
 def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df: pd.DataFrame) -> None:
     """Render the overview/dashboard page."""
-    st.markdown("### 📊 League Overview")
-    st.markdown("Get insights into your table football league performance and statistics.")
+    status_title, status_msg = get_league_status_message(stats_df, matches_df)
+
+    st.markdown(f"### {status_title}")
+    st.markdown(status_msg)
 
     st.divider()
 
@@ -213,23 +275,36 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
     with col3:
         if not matches_df.empty:
             avg_goals = matches_df["total_goals"].mean()
-            st.metric(label="🥅 Avg Goals/Match", value=f"{avg_goals:.1f}", help="Average total goals scored per match")
+            if avg_goals >= 9:
+                goal_msg = "🔥 Explosive!"
+            elif avg_goals >= 8:
+                goal_msg = "⚡ High-scoring!"
+            elif avg_goals >= 7:
+                goal_msg = "⚽ Action-packed!"
+            elif avg_goals >= 6:
+                goal_msg = "🎯 Balanced!"
+            else:
+                goal_msg = "🛡️ Defensive!"
+            st.metric(
+                label="🥅 Goals/Match", value=f"{avg_goals:.1f}", delta=goal_msg, help="How explosive are your matches?"
+            )
         else:
-            st.metric("🥅 Avg Goals/Match", "0.0")
+            st.metric("🥅 Goals/Match", "0.0")
 
     with col4:
         if not stats_df.empty:
             top_player_idx = stats_df["win_rate"].idxmax()
             top_player = stats_df.loc[top_player_idx, "player_name"]
             top_win_rate = stats_df.loc[top_player_idx, "win_rate"]
+            personality = get_top_player_personality(stats_df)
             st.metric(
-                label="🌟 Top Player",
+                label="🌟 League Champion",
                 value=top_player,
-                delta=f"{top_win_rate:.1f}% win rate",
-                help="Player with the highest win rate",
+                delta=f"{top_win_rate:.1f}% • {personality}",
+                help="The player currently ruling the league!",
             )
         else:
-            st.metric("🌟 Top Player", "No data")
+            st.metric("🌟 League Champion", "Crown awaits...")
 
     st.divider()
 
@@ -256,5 +331,13 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
         st.markdown("**League Activity & Match Trends**")
         st.plotly_chart(create_league_activity_chart(data), use_container_width=True)
     else:
-        st.info("📊 Charts will appear here once you have match data!")
-        st.markdown("Start playing matches to see beautiful analytics and insights.")
+        st.info("🎮 Ready Player One?")
+        st.markdown("""🏆 **Your table football journey starts here!**
+
+Get ready for epic matches, legendary comebacks, and statistical glory. Every champion started with their first game - what are you waiting for?""")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.success("💪 **Pro Tips:**\n- Practice your shots!\n- Master the defense!\n- Study your opponents!")
+        with col2:
+            st.info("🎯 **Coming Soon:**\n- Epic win streaks\n- Legendary rivalries\n- Championship moments")
