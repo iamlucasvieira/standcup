@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from standcup.pages import (
+from .pages import (
     render_head_to_head_page,
     render_leaderboard_page,
     render_match_history_page,
@@ -12,7 +12,7 @@ from standcup.pages import (
     render_overview_page,
     render_player_stats_page,
 )
-from standcup.utils import calculate_player_stats, load_data
+from .utils import calculate_player_stats, load_data
 
 
 def main() -> None:
