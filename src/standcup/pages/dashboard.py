@@ -159,24 +159,17 @@ def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
             .reset_index()
         )
 
-        # Show all players with at least 1 match
-        if len(player_data) >= 1:
-            fig.add_trace(
-                go.Scatter(
-                    x=daily_win_rates["date"],
-                    y=daily_win_rates["win_rate"],
-                    mode="lines+markers",
-                    name=player_name,
-                    line={"width": 3},
-                    marker={"size": 6},
-                    hovertemplate=f"<b>{player_name}</b><br>"
-                    + "Date: %{x}<br>"
-                    + "Win Rate: %{y:.1f}%<br>"
-                    + "Matches Played: %{customdata}<br>"
-                    + "<extra></extra>",
-                    customdata=daily_win_rates["cumulative_matches"],
-                )
+        fig.add_trace(
+            go.Scatter(
+                x=daily_win_rates["date"],
+                y=daily_win_rates["win_rate"],
+                mode="lines+markers",
+                name=player_name,
+                line={"width": 3},
+                marker={"size": 6},
+                hovertemplate=f"<b>{player_name}</b><br>" + "Win Rate: %{y:.1f}%<br>" + "<extra></extra>",
             )
+        )
 
     fig.update_layout(
         title="Win Rate Progression Over Time",
