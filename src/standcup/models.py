@@ -7,8 +7,10 @@ from enum import Enum
 from pathlib import Path
 
 import pandas as pd
+import streamlit as st
 import yaml
 from pydantic import BaseModel, Field
+from streamlit_gsheets import GSheetsConnection
 
 
 class Player(BaseModel):
@@ -84,6 +86,42 @@ class StandcupData(BaseModel):
         with open(file_path) as f:
             data = yaml.safe_load(f)
         return cls(**data)
+
+    @classmethod
+    def from_google_sheets(_cls) -> StandcupData:
+        """Load data from Google Sheets."""
+        # Connect to Google Sheets
+        conn = st.connection("gsheets", type=GSheetsConnection)
+
+        # Load players
+        players_df = conn.read(worksheet="0", ttl="5m")
+        players = [Player(id=row["id"], name=row["name"]) for _, row in players_df.iterrows()]
+
+        # Load matches
+        matches_df = conn.read(worksheet="322680090", ttl="5m")
+        matches = []
+
+        for _, row in matches_df.iterrows():
+            # Build teams from individual player columns
+            team1_players = [p for p in [row.get("team_1_p1"), row.get("team_1_p2")] if pd.notna(p) and p]
+            team2_players = [p for p in [row.get("team_2_p1"), row.get("team_2_p2")] if pd.notna(p) and p]
+
+            # Handle date parsing
+            parsed_date = datetime.strptime(row["date"], "%d/%m/%Y")
+
+            match = Match(
+                id=str(row["id"]),
+                date=parsed_date,
+                team1=Team(players=team1_players),
+                team2=Team(players=team2_players),
+                team1_score=int(row["team_1_score"]),
+                team2_score=int(row["team_2_score"]),
+                game_type=row.get("game_type", "casual"),
+                notes=row.get("notes") if pd.notna(row.get("notes")) else None,
+            )
+            matches.append(match)
+
+        return _cls(players=players, matches=matches)
 
     def to_yaml(self, file_path: str | Path) -> None:
         """Save data to YAML file."""

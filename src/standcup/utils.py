@@ -11,11 +11,13 @@ from standcup.models import StandcupData
 
 
 @st.cache_data
-def load_data(data_path: str | Path | None = None) -> StandcupData:
-    """Load data with caching."""
-    if data_path is None:
-        data_path = Path(__file__).parent / "data.yml"
-    return StandcupData.from_yaml(data_path)
+def load_data() -> StandcupData:
+    """Load data with caching from Google Sheets or YAML file."""
+    try:
+        return StandcupData.from_google_sheets()
+    except Exception as e:
+        st.error(f"Error loading data from Google Sheets: {e}")
+        return StandcupData.from_yaml(Path(__file__).parent / "data.yml")
 
 
 def calculate_player_stats(data: StandcupData) -> pd.DataFrame:
