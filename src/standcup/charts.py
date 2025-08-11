@@ -95,6 +95,10 @@ def create_cumulative_wins_chart(data: StandcupData) -> go.Figure:
     # Get player names mapping
     players_dict = {p.id: p.name for p in data.players}
 
+    # Convert date to datetime and strip time for even distribution
+    player_matches = player_matches.copy()
+    player_matches["date"] = player_matches["date"].apply(lambda x: pd.to_datetime(x).date())
+
     # Sort by date to get chronological order
     player_matches = player_matches.sort_values("date")
 
@@ -104,9 +108,6 @@ def create_cumulative_wins_chart(data: StandcupData) -> go.Figure:
     for player_id in player_matches["player_id"].unique():
         player_data = player_matches[player_matches["player_id"] == player_id].copy()
         player_data["cumulative_wins"] = player_data["won"].cumsum()
-
-        # Add match number (1-indexed for each player)
-        player_data["match_number"] = range(1, len(player_data) + 1)
 
         # Add player name
         player_data["player_name"] = players_dict.get(player_id, player_id)
@@ -126,22 +127,22 @@ def create_cumulative_wins_chart(data: StandcupData) -> go.Figure:
 
         fig.add_trace(
             go.Scatter(
-                x=player_data["match_number"],
+                x=player_data["date"],
                 y=player_data["cumulative_wins"],
                 mode="lines+markers",
                 name=player_name,
                 line={"width": 3},
                 marker={"size": 6},
                 hovertemplate=f"<b>{player_name}</b><br>"
-                + "Match: %{x}<br>"
+                + "Date: %{x}<br>"
                 + "Cumulative Wins: %{y}<br>"
                 + "<extra></extra>",
             )
         )
 
     fig.update_layout(
-        title="Cumulative Wins by Match - Leaderboard Progression",
-        xaxis_title="Match Number",
+        title="Cumulative Wins by Date - Leaderboard Progression",
+        xaxis_title="Date",
         yaxis_title="Cumulative Wins",
         height=500,
         hovermode="x unified",
