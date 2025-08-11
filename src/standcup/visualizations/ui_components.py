@@ -5,9 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import streamlit as st
-
-from ..player_insights import get_player_personality
-from .charts import create_goals_chart, create_win_rate_gauge
+from player_insights import get_player_personality
+from visualizations.charts import create_goals_chart, create_win_rate_gauge
 
 if TYPE_CHECKING:
     import pandas as pd

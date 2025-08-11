@@ -1,11 +1,11 @@
 """Pages package for Standcup - Table Football Tracker."""
 
-from standcup.pages.dashboard import render_overview_page
-from standcup.pages.head_to_head import render_head_to_head_page
-from standcup.pages.leaderboard import render_leaderboard_page
-from standcup.pages.match_history import render_match_history_page
-from standcup.pages.match_maker import render_match_maker_page
-from standcup.pages.player_stats import render_player_stats_page
+from .dashboard import render_overview_page
+from .head_to_head import render_head_to_head_page
+from .leaderboard import render_leaderboard_page
+from .match_history import render_match_history_page
+from .match_maker import render_match_maker_page
+from .player_stats import render_player_stats_page
 
 __all__ = [
     "render_head_to_head_page",
