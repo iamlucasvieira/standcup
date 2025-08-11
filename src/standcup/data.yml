@@ -71,3 +71,13 @@ matches:
     team1_score: 4
     team2_score: 10
     game_type: "casual"
+
+  - id: "match_006"
+    date: "2025-08-11T15:00:00"
+    team1:
+      players: ["stefan", "lucas"]
+    team2:
+      players: ["gorkem", "luc"]
+    team1_score: 4
+    team2_score: 10
+    game_type: "casual"
