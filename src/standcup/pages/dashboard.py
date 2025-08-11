@@ -48,8 +48,8 @@ def create_goals_chart(stats_df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def create_match_timeline(data: StandcupData) -> go.Figure:
-    """Create a timeline of matches."""
+def create_league_activity_chart(data: StandcupData) -> go.Figure:
+    """Create a chart showing league activity and match competitiveness over time."""
     matches_df = data.to_matches_df()
 
     if matches_df.empty:
@@ -58,22 +58,69 @@ def create_match_timeline(data: StandcupData) -> go.Figure:
     matches_df["date"] = pd.to_datetime(matches_df["date"])
     matches_df = matches_df.sort_values("date")
 
-    fig = px.scatter(
-        matches_df,
-        x="date",
-        y="total_goals",
-        color="game_type",
-        size="total_goals",
-        hover_data=["team1_players", "team2_players", "team1_score", "team2_score"],
-        title="Match Timeline - Goals Scored Over Time",
+    # Calculate rolling averages for trends
+    matches_df["goal_difference"] = abs(matches_df["team1_score"] - matches_df["team2_score"])
+
+    # Group by week to show trends
+    matches_df["week"] = matches_df["date"].dt.to_period("W").dt.start_time
+    weekly_stats = (
+        matches_df.groupby("week").agg({"total_goals": "mean", "goal_difference": "mean", "match_id": "count"}).round(2)
     )
 
-    fig.update_layout(height=400)
+    # Create subplot with secondary y-axis
+    fig = go.Figure()
+
+    # Match frequency (bar chart)
+    fig.add_trace(
+        go.Bar(
+            x=weekly_stats.index,
+            y=weekly_stats["match_id"],
+            name="Matches per Week",
+            marker_color="lightblue",
+            opacity=0.7,
+            yaxis="y2",
+        )
+    )
+
+    # Average goals per match (line)
+    fig.add_trace(
+        go.Scatter(
+            x=weekly_stats.index,
+            y=weekly_stats["total_goals"],
+            mode="lines+markers",
+            name="Avg Goals/Match",
+            line={"color": "green", "width": 3},
+            marker={"size": 8},
+        )
+    )
+
+    # Average goal difference (competitiveness indicator)
+    fig.add_trace(
+        go.Scatter(
+            x=weekly_stats.index,
+            y=weekly_stats["goal_difference"],
+            mode="lines+markers",
+            name="Avg Goal Difference",
+            line={"color": "orange", "width": 3, "dash": "dot"},
+            marker={"size": 6},
+        )
+    )
+
+    fig.update_layout(
+        title="League Activity & Match Trends Over Time",
+        xaxis_title="Date",
+        yaxis={"title": "Goals", "side": "left"},
+        yaxis2={"title": "Number of Matches", "side": "right", "overlaying": "y"},
+        height=400,
+        hovermode="x unified",
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "right", "x": 1},
+    )
+
     return fig
 
 
-def create_cumulative_wins_chart(data: StandcupData) -> go.Figure:
-    """Create a cumulative wins by match chart showing leaderboard progression."""
+def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
+    """Create a chart showing win rate progression over time for each player."""
     player_matches = data.to_player_match_df()
 
     if player_matches.empty:
@@ -82,58 +129,53 @@ def create_cumulative_wins_chart(data: StandcupData) -> go.Figure:
     # Get player names mapping
     players_dict = {p.id: p.name for p in data.players}
 
-    # Convert date to datetime and strip time for even distribution
+    # Convert date to datetime
     player_matches = player_matches.copy()
-    player_matches["date"] = player_matches["date"].apply(lambda x: pd.to_datetime(x).date())
+    player_matches["date"] = pd.to_datetime(player_matches["date"])
 
     # Sort by date to get chronological order
     player_matches = player_matches.sort_values("date")
 
-    # Calculate cumulative wins for each player
-    cumulative_data = []
-
-    for player_id in player_matches["player_id"].unique():
-        player_data = player_matches[player_matches["player_id"] == player_id].copy()
-        player_data["cumulative_wins"] = player_data["won"].cumsum()
-
-        # Add player name
-        player_data["player_name"] = players_dict.get(player_id, player_id)
-
-        cumulative_data.append(player_data)
-
-    # Combine all player data
-    all_data = pd.concat(cumulative_data, ignore_index=True)
-
-    # Create the plot
     fig = go.Figure()
 
-    # Add a line for each player
-    for player_id in all_data["player_id"].unique():
-        player_data = all_data[all_data["player_id"] == player_id]
+    # Calculate rolling win rate for each player
+    for player_id in player_matches["player_id"].unique():
+        player_data = player_matches[player_matches["player_id"] == player_id].copy()
         player_name = players_dict.get(player_id, player_id)
 
-        fig.add_trace(
-            go.Scatter(
-                x=player_data["date"],
-                y=player_data["cumulative_wins"],
-                mode="lines+markers",
-                name=player_name,
-                line={"width": 3},
-                marker={"size": 6},
-                hovertemplate=f"<b>{player_name}</b><br>"
-                + "Date: %{x}<br>"
-                + "Cumulative Wins: %{y}<br>"
-                + "<extra></extra>",
+        # Calculate cumulative win rate
+        player_data["cumulative_wins"] = player_data["won"].cumsum()
+        player_data["cumulative_matches"] = range(1, len(player_data) + 1)
+        player_data["win_rate"] = (player_data["cumulative_wins"] / player_data["cumulative_matches"] * 100).round(1)
+
+        # Only show players with at least 3 matches for meaningful trends
+        if len(player_data) >= 3:
+            fig.add_trace(
+                go.Scatter(
+                    x=player_data["date"],
+                    y=player_data["win_rate"],
+                    mode="lines+markers",
+                    name=player_name,
+                    line={"width": 3},
+                    marker={"size": 6},
+                    hovertemplate=f"<b>{player_name}</b><br>"
+                    + "Date: %{x}<br>"
+                    + "Win Rate: %{y:.1f}%<br>"
+                    + "Matches Played: "
+                    + player_data["cumulative_matches"].astype(str)
+                    + "<br>"
+                    + "<extra></extra>",
+                )
             )
-        )
 
     fig.update_layout(
-        title="Cumulative Wins by Date - Leaderboard Progression",
+        title="Win Rate Progression Over Time",
         xaxis_title="Date",
-        yaxis_title="Cumulative Wins",
+        yaxis_title="Win Rate (%)",
         height=500,
         hovermode="x unified",
         legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 0.01},
+        yaxis={"range": [0, 100]},  # Fix y-axis to 0-100% for better comparison
     )
 
     return fig
@@ -185,9 +227,9 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
     if not stats_df.empty:
         st.markdown("#### 📈 Performance Analytics")
 
-        # Leaderboard progression chart - full width
-        st.markdown("**Win Progression Over Time**")
-        st.plotly_chart(create_cumulative_wins_chart(data), use_container_width=True)
+        # Win rate progression chart - full width
+        st.markdown("**Win Rate Progression Over Time**")
+        st.plotly_chart(create_win_rate_over_time_chart(data), use_container_width=True)
 
         # Side-by-side performance charts
         col1, col2 = st.columns(2, gap="medium")
@@ -200,9 +242,9 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
             st.markdown("**Goal Statistics**")
             st.plotly_chart(create_goals_chart(stats_df), use_container_width=True)
 
-        # Match activity timeline
-        st.markdown("**Match Activity Timeline**")
-        st.plotly_chart(create_match_timeline(data), use_container_width=True)
+        # League activity and trends
+        st.markdown("**League Activity & Match Trends**")
+        st.plotly_chart(create_league_activity_chart(data), use_container_width=True)
     else:
         st.info("📊 Charts will appear here once you have match data!")
         st.markdown("Start playing matches to see beautiful analytics and insights.")
