@@ -2,11 +2,25 @@
 
 from __future__ import annotations
 
+import plotly.graph_objects as go
 import streamlit as st
 
-from standcup.charts import create_head_to_head_chart
 from standcup.models import StandcupData
 from standcup.utils import calculate_head_to_head
+
+
+def create_head_to_head_chart(player1: str, player2: str, p1_win_rate: float, p2_win_rate: float) -> go.Figure:
+    """Create a head-to-head win rate chart."""
+    fig = go.Figure(
+        data=[
+            go.Bar(name=player1, x=[player1], y=[p1_win_rate], marker_color="lightblue"),
+            go.Bar(name=player2, x=[player2], y=[p2_win_rate], marker_color="lightcoral"),
+        ]
+    )
+
+    fig.update_layout(title=f"{player1} vs {player2} - Win Rate (%)", yaxis_title="Win Rate (%)", height=400)
+
+    return fig
 
 
 def render_head_to_head_page(data: StandcupData) -> None:
