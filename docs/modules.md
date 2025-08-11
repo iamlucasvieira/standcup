@@ -1,1 +1,1 @@
-::: standcup.foo
+::: standcup.app
