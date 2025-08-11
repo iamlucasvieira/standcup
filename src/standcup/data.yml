@@ -17,6 +17,9 @@ players:
   - id: "stefan"
     name: "Stefan"
 
+  - id: "gorkem"
+    name: "Görkem"
+
 matches:
   - id: "match_001"
     date: "2025-08-04T14:30:00"
@@ -56,5 +59,15 @@ matches:
     team2:
       players: ["nordin", "luc"]
     team1_score: 5
+    team2_score: 10
+    game_type: "casual"
+
+  - id: "match_005"
+    date: "2025-08-11T15:00:00"
+    team1:
+      players: ["gorkem", "lucas"]
+    team2:
+      players: ["stephan", "luc"]
+    team1_score: 4
     team2_score: 10
     game_type: "casual"
