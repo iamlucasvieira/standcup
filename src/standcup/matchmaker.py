@@ -161,14 +161,24 @@ def _generate_doubles_suggestions(
 ) -> list[MatchSuggestion]:
     """Generate doubles match suggestions."""
     suggestions = []
+    seen_matches = set()
+
     for team1 in combinations(available_players, 2):
         remaining = [p for p in available_players if p not in team1]
         for team2 in combinations(remaining, 2):
             if len(set(team1 + team2)) == 4:  # Ensure no duplicate players
-                score, reasoning = score_match_quality(
-                    list(team1), list(team2), strengths, pairing_history, max_pairings
-                )
-                suggestions.append(MatchSuggestion(list(team1), list(team2), score, reasoning))
+                # Create a normalized match signature to avoid duplicates
+                # Sort both teams and then sort the pair of teams
+                normalized_team1 = tuple(sorted(team1))
+                normalized_team2 = tuple(sorted(team2))
+                match_signature = tuple(sorted([normalized_team1, normalized_team2]))
+
+                if match_signature not in seen_matches:
+                    seen_matches.add(match_signature)
+                    score, reasoning = score_match_quality(
+                        list(team1), list(team2), strengths, pairing_history, max_pairings
+                    )
+                    suggestions.append(MatchSuggestion(list(team1), list(team2), score, reasoning))
     return suggestions
 
 
