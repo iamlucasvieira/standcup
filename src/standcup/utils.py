@@ -35,7 +35,6 @@ def calculate_player_stats(data: StandcupData) -> pd.DataFrame:
         .agg({
             "won": ["count", "sum"],
             "lost": "sum",
-            "tied": "sum",
             "goals_for": "sum",
             "goals_against": "sum",
         })
@@ -43,7 +42,7 @@ def calculate_player_stats(data: StandcupData) -> pd.DataFrame:
     )
 
     # Flatten column names
-    stats.columns = ["matches_played", "wins", "losses", "ties", "goals_for", "goals_against"]
+    stats.columns = ["matches_played", "wins", "losses", "goals_for", "goals_against"]
 
     # Calculate additional metrics
     stats["win_rate"] = (stats["wins"] / stats["matches_played"] * 100).round(1)
@@ -68,11 +67,10 @@ def calculate_head_to_head(data: StandcupData, player1_id: str, player2_id: str)
     common_matches = player1_matches & player2_matches
 
     if not common_matches:
-        return {"p1_wins": 0, "p2_wins": 0, "ties": 0, "total_matches": 0}
+        return {"p1_wins": 0, "p2_wins": 0, "total_matches": 0}
 
     p1_wins = 0
     p2_wins = 0
-    ties = 0
 
     for match_id in common_matches:
         match = next(m for m in data.matches if m.id == match_id)
@@ -90,7 +88,5 @@ def calculate_head_to_head(data: StandcupData, player1_id: str, player2_id: str)
             p1_wins += 1
         elif winner == p2_team:
             p2_wins += 1
-        else:
-            ties += 1
 
-    return {"p1_wins": p1_wins, "p2_wins": p2_wins, "ties": ties, "total_matches": p1_wins + p2_wins + ties}
+    return {"p1_wins": p1_wins, "p2_wins": p2_wins, "total_matches": p1_wins + p2_wins}

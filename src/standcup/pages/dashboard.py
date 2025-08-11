@@ -131,7 +131,7 @@ def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
 
     # Convert date to datetime and extract date only (no time)
     player_matches = player_matches.copy()
-    player_matches["date"] = pd.to_datetime(player_matches["date"]).dt.date
+    player_matches["date"] = pd.to_datetime(player_matches["date"])
 
     # Sort by date to get chronological order
     player_matches = player_matches.sort_values("date")

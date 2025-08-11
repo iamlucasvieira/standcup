@@ -52,13 +52,12 @@ class Match(BaseModel):
     notes: str | None = None
 
     @property
-    def winner_team(self) -> int | None:
-        """Returns 1 if team1 wins, 2 if team2 wins, None if tie."""
+    def winner_team(self) -> int:
+        """Returns 1 if team1 wins, 2 if team2 wins."""
         if self.team1_score > self.team2_score:
             return 1
-        elif self.team2_score > self.team1_score:
+        else:
             return 2
-        return None
 
 
 class Tournament(BaseModel):
@@ -177,7 +176,6 @@ class StandcupData(BaseModel):
                     "goals_against": match.team2_score,
                     "won": match.winner_team == 1,
                     "lost": match.winner_team == 2,
-                    "tied": match.winner_team is None,
                     "game_type": match.game_type,
                     "is_singles": match.team1.is_singles and match.team2.is_singles,
                 }
@@ -199,7 +197,6 @@ class StandcupData(BaseModel):
                     "goals_against": match.team1_score,
                     "won": match.winner_team == 2,
                     "lost": match.winner_team == 1,
-                    "tied": match.winner_team is None,
                     "game_type": match.game_type,
                     "is_singles": match.team1.is_singles and match.team2.is_singles,
                 }

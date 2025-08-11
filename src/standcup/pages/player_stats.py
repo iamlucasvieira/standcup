@@ -118,7 +118,6 @@ def _render_win_loss_record(col, player_stats: pd.Series) -> None:
     with col:
         st.markdown("**📊 Win/Loss Record**")
         st.metric("Losses", int(player_stats["losses"]))
-        st.metric("Ties", int(player_stats["ties"]))
 
         goal_diff = player_stats["goal_difference"]
         diff_msg = _get_goal_diff_message(goal_diff)
@@ -176,7 +175,6 @@ def _render_leaderboard(stats_df: pd.DataFrame) -> None:
             "matches_played",
             "wins",
             "losses",
-            "ties",
             "win_rate",
             "goals_for",
             "goals_against",
@@ -188,7 +186,6 @@ def _render_leaderboard(stats_df: pd.DataFrame) -> None:
         "Matches",
         "Wins",
         "Losses",
-        "Ties",
         "Win Rate (%)",
         "Goals For",
         "Goals Against",

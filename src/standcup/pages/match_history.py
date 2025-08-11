@@ -11,9 +11,7 @@ def get_match_excitement(team1_score: int, team2_score: int) -> str:
     total_goals = team1_score + team2_score
     goal_diff = abs(team1_score - team2_score)
 
-    if goal_diff == 0:
-        return "🤝 Epic Draw!"
-    elif goal_diff == 1:
+    if goal_diff == 1:
         if total_goals >= 18:
             return "🔥 Nail-biter!"
         else:

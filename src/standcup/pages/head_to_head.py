@@ -14,7 +14,6 @@ def get_rivalry_status(h2h_stats: dict) -> tuple[str, str]:
     total = h2h_stats["total_matches"]
     p1_wins = h2h_stats["p1_wins"]
     p2_wins = h2h_stats["p2_wins"]
-    ties = h2h_stats["ties"]
 
     if total == 0:
         return "🤝 Fresh Rivalry", "The stage is set for an epic showdown!"
@@ -30,11 +29,7 @@ def get_rivalry_status(h2h_stats: dict) -> tuple[str, str]:
     else:
         rivalry_level = "🌱 Growing Rivalry"
 
-    if ties > total * 0.3:
-        description = (
-            f"{ties} draws out of {total} matches! These players are perfectly matched - pure competitive fire!"
-        )
-    elif win_diff <= 1 and total >= 5:
+    if win_diff <= 1 and total >= 5:
         description = f"Dead even at {total} matches! This is what championship rivalries are made of!"
     elif win_diff <= 2 and total >= 8:
         description = f"Tight competition across {total} battles - neither player gives an inch!"
@@ -168,9 +163,7 @@ def render_head_to_head_page(data: StandcupData) -> None:
         st.metric(f"🔴 {player1}", h2h_stats["p1_wins"], delta=p1_personality)
 
     with col2:
-        ties = h2h_stats["ties"]
-        tie_msg = ("🤝 Evenly matched!" if ties > 2 else "🎯 Close battles!") if ties > 0 else "No draws yet!"
-        st.metric("⚖️ Draws", ties, delta=tie_msg)
+        st.metric("⚔️ Total Matches", h2h_stats["total_matches"], delta="Epic battles!")
 
     with col3:
         p2_personality = get_head_to_head_personality(player2, h2h_stats["p2_wins"], h2h_stats["total_matches"])

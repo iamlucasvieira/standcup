@@ -143,8 +143,8 @@ class TestMatch:
         [
             (3, 1, 1),
             (1, 3, 2),
-            (2, 2, None),
-            (0, 0, None),
+            (2, 2, 2),
+            (0, 0, 2),
             (5, 3, 1),
         ],
     )
@@ -318,7 +318,6 @@ class TestStandcupData:
             assert row["goals_against"] == 2
             assert row["won"]
             assert not row["lost"]
-            assert not row["tied"]
             assert row["opponent1"] == "p3"
             assert row["opponent2"] is None
             assert row["is_singles"] is False
@@ -331,7 +330,6 @@ class TestStandcupData:
         assert team2_row["goals_against"] == 4
         assert not team2_row["won"]
         assert team2_row["lost"]
-        assert not team2_row["tied"]
 
     def test_to_matches_df_empty(self):
         data = StandcupData()
