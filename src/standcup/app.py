@@ -6,6 +6,7 @@ import streamlit as st
 
 from standcup.pages import (
     render_head_to_head_page,
+    render_leaderboard_page,
     render_match_history_page,
     render_match_maker_page,
     render_overview_page,
@@ -26,6 +27,7 @@ def main() -> None:
     # Modern navigation
     pages = [
         st.Page(render_dashboard_wrapper, title="Dashboard", icon="🏠"),
+        st.Page(render_leaderboard_wrapper, title="Leaderboard", icon="🏆"),
         st.Page(render_player_stats_wrapper, title="Player Stats", icon="👥"),
         st.Page(render_match_history_wrapper, title="Match History", icon="📋"),
         st.Page(render_head_to_head_wrapper, title="Head-to-Head", icon="⚔️"),
@@ -56,6 +58,15 @@ def render_dashboard_wrapper():
     stats_df = calculate_player_stats(data)
     matches_df = data.to_matches_df()
     render_overview_page(data, stats_df, matches_df)
+
+
+def render_leaderboard_wrapper():
+    """Wrapper for leaderboard page."""
+    data = load_data()
+    if not _validate_data(data):
+        return
+    stats_df = calculate_player_stats(data)
+    render_leaderboard_page(stats_df)
 
 
 def render_player_stats_wrapper():
