@@ -34,7 +34,7 @@ matches:
     team1:
       players: ["luc", "lucas"]
     team2:
-      players: ["ryan", "luc"]
+      players: ["ryan", "nordin"]
     team1_score: 5
     team2_score: 10
     game_type: "casual"
