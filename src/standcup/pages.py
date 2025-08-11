@@ -5,7 +5,13 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from standcup.charts import create_goals_chart, create_head_to_head_chart, create_match_timeline, create_win_rate_chart
+from standcup.charts import (
+    create_cumulative_wins_chart,
+    create_goals_chart,
+    create_head_to_head_chart,
+    create_match_timeline,
+    create_win_rate_chart,
+)
 from standcup.models import StandcupData
 from standcup.utils import calculate_head_to_head
 
@@ -35,6 +41,9 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
 
     # Charts
     if not stats_df.empty:
+        # Leaderboard progression chart - full width
+        st.plotly_chart(create_cumulative_wins_chart(data), use_container_width=True)
+
         col1, col2 = st.columns(2)
 
         with col1:

@@ -83,3 +83,66 @@ def create_head_to_head_chart(player1: str, player2: str, p1_win_rate: float, p2
     fig.update_layout(title=f"{player1} vs {player2} - Win Rate (%)", yaxis_title="Win Rate (%)", height=400)
 
     return fig
+
+
+def create_cumulative_wins_chart(data: StandcupData) -> go.Figure:
+    """Create a cumulative wins over time chart showing leaderboard progression."""
+    player_matches = data.to_player_match_df()
+
+    if player_matches.empty:
+        return go.Figure()
+
+    # Get player names mapping
+    players_dict = {p.id: p.name for p in data.players}
+
+    # Sort by date to get chronological order
+    player_matches = player_matches.sort_values("date")
+
+    # Calculate cumulative wins for each player
+    cumulative_data = []
+
+    for player_id in player_matches["player_id"].unique():
+        player_data = player_matches[player_matches["player_id"] == player_id].copy()
+        player_data["cumulative_wins"] = player_data["won"].cumsum()
+
+        # Add player name
+        player_data["player_name"] = players_dict.get(player_id, player_id)
+
+        cumulative_data.append(player_data)
+
+    # Combine all player data
+    all_data = pd.concat(cumulative_data, ignore_index=True)
+
+    # Create the plot
+    fig = go.Figure()
+
+    # Add a line for each player
+    for player_id in all_data["player_id"].unique():
+        player_data = all_data[all_data["player_id"] == player_id]
+        player_name = players_dict.get(player_id, player_id)
+
+        fig.add_trace(
+            go.Scatter(
+                x=player_data["date"],
+                y=player_data["cumulative_wins"],
+                mode="lines+markers",
+                name=player_name,
+                line={"width": 3},
+                marker={"size": 6},
+                hovertemplate=f"<b>{player_name}</b><br>"
+                + "Date: %{x}<br>"
+                + "Cumulative Wins: %{y}<br>"
+                + "<extra></extra>",
+            )
+        )
+
+    fig.update_layout(
+        title="Cumulative Wins Over Time - Leaderboard Progression",
+        xaxis_title="Date",
+        yaxis_title="Cumulative Wins",
+        height=500,
+        hovermode="x unified",
+        legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 0.01},
+    )
+
+    return fig
