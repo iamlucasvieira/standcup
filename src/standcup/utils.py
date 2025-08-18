@@ -8,6 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from standcup.models import StandcupData
+from standcup.wilson_score import get_wilson_win_rate
 
 
 @st.cache_data
@@ -44,8 +45,10 @@ def calculate_player_stats(data: StandcupData) -> pd.DataFrame:
     # Flatten column names
     stats.columns = ["matches_played", "wins", "losses", "goals_for", "goals_against"]
 
-    # Calculate additional metrics
-    stats["win_rate"] = (stats["wins"] / stats["matches_played"] * 100).round(1)
+    # Calculate additional metrics using Wilson score interval for more accurate win rates
+    stats["win_rate"] = stats.apply(
+        lambda row: get_wilson_win_rate(int(row["wins"]), int(row["matches_played"]), method="center"), axis=1
+    ).round(1)
     stats["goal_difference"] = stats["goals_for"] - stats["goals_against"]
     stats["avg_goals_per_match"] = (stats["goals_for"] / stats["matches_played"]).round(2)
     stats["avg_goals_against_per_match"] = (stats["goals_against"] / stats["matches_played"]).round(2)

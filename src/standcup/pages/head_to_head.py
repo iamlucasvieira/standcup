@@ -7,6 +7,7 @@ import streamlit as st
 
 from standcup.models import StandcupData
 from standcup.utils import calculate_head_to_head
+from standcup.wilson_score import get_wilson_win_rate
 
 
 def get_rivalry_status(h2h_stats: dict) -> tuple[str, str]:
@@ -46,7 +47,7 @@ def get_head_to_head_personality(player_name: str, wins: int, total: int) -> str
     if total == 0:
         return "Ready to battle! 🚀"
 
-    win_rate = (wins / total) * 100
+    win_rate = get_wilson_win_rate(wins, total, method="center")
 
     if win_rate >= 80:
         return f"Dominating! 👑 ({wins}/{total})"
@@ -171,8 +172,8 @@ def render_head_to_head_page(data: StandcupData) -> None:
 
     # Win percentage chart
     if h2h_stats["total_matches"] > 0:
-        p1_win_rate = (h2h_stats["p1_wins"] / h2h_stats["total_matches"]) * 100
-        p2_win_rate = (h2h_stats["p2_wins"] / h2h_stats["total_matches"]) * 100
+        p1_win_rate = get_wilson_win_rate(h2h_stats["p1_wins"], h2h_stats["total_matches"], method="center")
+        p2_win_rate = get_wilson_win_rate(h2h_stats["p2_wins"], h2h_stats["total_matches"], method="center")
 
         st.markdown("### 📊 Battle Statistics")
         st.markdown("*The numbers that tell the story of this epic rivalry*")

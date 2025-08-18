@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from standcup.models import StandcupData
+from standcup.wilson_score import get_wilson_win_rate
 
 
 def create_win_rate_chart(stats_df: pd.DataFrame) -> go.Figure:
@@ -143,10 +144,15 @@ def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
         player_data = player_matches[player_matches["player_id"] == player_id].copy()
         player_name = players_dict.get(player_id, player_id)
 
-        # Calculate cumulative win rate
+        # Calculate cumulative Wilson score win rate for more accurate progression tracking
         player_data["cumulative_wins"] = player_data["won"].cumsum()
         player_data["cumulative_matches"] = range(1, len(player_data) + 1)
-        player_data["win_rate"] = (player_data["cumulative_wins"] / player_data["cumulative_matches"] * 100).round(1)
+        player_data["win_rate"] = player_data.apply(
+            lambda row: get_wilson_win_rate(
+                int(row["cumulative_wins"]), int(row["cumulative_matches"]), method="center"
+            ),
+            axis=1,
+        ).round(1)
 
         # Group by date and take the last (end-of-day) win rate for each date
         # This eliminates multiple points on the same day
