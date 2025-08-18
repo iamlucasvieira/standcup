@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import streamlit as st
-from achievements import render_achievement_badges
-from player_insights import render_player_insights
-from visualizations import render_detailed_stats, render_key_metrics, render_player_header
+
+from standcup.achievements import render_achievement_badges
+from standcup.player_insights import render_player_insights
+from standcup.visualizations import render_detailed_stats, render_key_metrics, render_player_header
 
 if TYPE_CHECKING:
     import pandas as pd
