@@ -8,6 +8,9 @@ games and converges to the simple win rate as the sample size increases.
 from __future__ import annotations
 
 import math
+from typing import Literal
+
+MethodType = Literal["lower_bound", "center"]
 
 
 def wilson_score_lower_bound(wins: int, total: int, confidence: float = 0.95) -> float:
@@ -82,7 +85,7 @@ def wilson_score_center(wins: int, total: int, confidence: float = 0.95) -> floa
     return center * 100
 
 
-def get_wilson_win_rate(wins: int, total: int, method: str = "lower_bound", confidence: float = 0.95) -> float:
+def get_wilson_win_rate(wins: int, total: int, method: MethodType = "lower_bound", confidence: float = 0.95) -> float:
     """Get Wilson score-based win rate.
 
     Args:
