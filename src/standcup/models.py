@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum, auto
 from pathlib import Path
 
 import pandas as pd
@@ -29,13 +29,25 @@ class Team(BaseModel):
     def is_singles(self) -> bool:
         return len(self.players) == 1
 
+    @property
+    def match_type(self) -> MatchType:
+        """Return the match type based on team size."""
+        return MatchType.ONE_V_ONE if len(self.players) == 1 else MatchType.TWO_V_TWO
 
-class GameType(str, Enum):
+
+class GameType(StrEnum):
     """Types of games that can be played."""
 
-    CASUAL = "casual"
-    TOURNAMENT = "tournament"
-    LEAGUE = "league"
+    CASUAL = auto()
+    TOURNAMENT = auto()
+    LEAGUE = auto()
+
+
+class MatchType(StrEnum):
+    """Types of match formats based on number of players per team."""
+
+    ONE_V_ONE = "1v1"
+    TWO_V_TWO = "2v2"
 
 
 class Match(BaseModel):
@@ -58,6 +70,12 @@ class Match(BaseModel):
             return 1
         else:
             return 2
+
+    @property
+    def match_type(self) -> MatchType:
+        """Return the match type based on team composition."""
+        # Both teams should have the same number of players for a valid match
+        return self.team1.match_type
 
 
 class Tournament(BaseModel):
@@ -148,7 +166,7 @@ class StandcupData(BaseModel):
                 "game_type": match.game_type,
                 "duration_minutes": match.duration_minutes,
                 "notes": match.notes,
-                "is_singles": match.team1.is_singles and match.team2.is_singles,
+                "match_type": match.match_type,
                 "total_goals": match.team1_score + match.team2_score,
             }
             matches_data.append(row)
@@ -177,7 +195,7 @@ class StandcupData(BaseModel):
                     "won": match.winner_team == 1,
                     "lost": match.winner_team == 2,
                     "game_type": match.game_type,
-                    "is_singles": match.team1.is_singles and match.team2.is_singles,
+                    "match_type": match.match_type,
                 }
                 player_matches.append(row)
 
@@ -199,6 +217,7 @@ class StandcupData(BaseModel):
                     "lost": match.winner_team == 1,
                     "game_type": match.game_type,
                     "is_singles": match.team1.is_singles and match.team2.is_singles,
+                    "match_type": match.match_type,
                 }
                 player_matches.append(row)
 

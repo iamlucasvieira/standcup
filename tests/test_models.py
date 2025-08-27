@@ -452,7 +452,6 @@ class TestStandcupData:
         assert row["game_type"] == GameType.TOURNAMENT
         assert row["duration_minutes"] == 20
         assert row["notes"] == "Great match"
-        assert not row["is_singles"]
         assert row["total_goals"] == 8
 
     def test_to_player_match_df(self):
@@ -482,7 +481,7 @@ class TestStandcupData:
             assert not row["lost"]
             assert row["opponent1"] == "p3"
             assert row["opponent2"] is None
-            assert row["is_singles"] is False
+            assert row["match_type"] == "2v2"
 
         # Check team2 player
         team2_row = df[df["team"] == 2].iloc[0]

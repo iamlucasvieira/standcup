@@ -366,7 +366,7 @@ def _render_player_strengths_section(data: StandcupData, stats_df: pd.DataFrame)
     strength_data = _build_strength_data(data, stats_df, strengths)
     if strength_data:
         strength_df = pd.DataFrame(strength_data).sort_values("Strength", ascending=False)
-        st.dataframe(strength_df, use_container_width=True)
+        st.dataframe(strength_df, width="stretch")
         _render_strength_explanation()
 
 

@@ -21,9 +21,17 @@ def load_data() -> StandcupData:
         return StandcupData.from_yaml(Path(__file__).parent / "data.yml")
 
 
-def calculate_player_stats(data: StandcupData) -> pd.DataFrame:
+def calculate_player_stats(data: StandcupData, match_type_filter: str | None = None) -> pd.DataFrame:
     """Calculate comprehensive player statistics."""
     player_df = data.to_player_match_df()
+
+    if player_df.empty:
+        return pd.DataFrame()
+
+    # Apply match type filter using the match_type column directly
+    if match_type_filter is not None:
+        player_df = player_df[player_df["match_type"] == match_type_filter]
+    # None requires no filtering
 
     if player_df.empty:
         return pd.DataFrame()

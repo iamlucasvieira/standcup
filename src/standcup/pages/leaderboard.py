@@ -98,7 +98,7 @@ def render_leaderboard_page(stats_df: pd.DataFrame) -> None:
     # Display the sorted data
     st.dataframe(
         display_stats,
-        use_container_width=True,
+        width="stretch",
         column_config={
             "Rank": st.column_config.NumberColumn("🏅 Rank", width="small"),
             "player_name": st.column_config.TextColumn("👤 Player", width="medium"),

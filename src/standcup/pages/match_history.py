@@ -89,7 +89,7 @@ def render_match_history_page(matches_df: pd.DataFrame) -> None:
         selected_type = st.selectbox("Game Type", game_types)
 
     with col2:
-        match_types = ["All", "Singles Only", "Doubles Only"]
+        match_types = ["All", *matches_df["match_type"].unique().tolist()]
         selected_match_type = st.selectbox("Match Type", match_types)
 
     # Filter data
@@ -98,10 +98,8 @@ def render_match_history_page(matches_df: pd.DataFrame) -> None:
     if selected_type != "All":
         filtered_df = filtered_df[filtered_df["game_type"] == selected_type]
 
-    if selected_match_type == "Singles Only":
-        filtered_df = filtered_df[filtered_df["is_singles"]]
-    elif selected_match_type == "Doubles Only":
-        filtered_df = filtered_df[~filtered_df["is_singles"]]
+    if selected_match_type != "All":
+        filtered_df = filtered_df[filtered_df["match_type"] == selected_match_type]
 
     # Match statistics
     if not filtered_df.empty:
@@ -162,7 +160,7 @@ def render_match_history_page(matches_df: pd.DataFrame) -> None:
 
     st.dataframe(
         display_matches.sort_values("Date", ascending=False),
-        use_container_width=True,
+        width="stretch",
         column_config={
             "Date": st.column_config.DatetimeColumn("📅 Date"),
             "Team 1": st.column_config.TextColumn("🔴 Team 1"),

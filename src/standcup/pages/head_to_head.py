@@ -177,7 +177,7 @@ def render_head_to_head_page(data: StandcupData) -> None:
 
         st.markdown("### 📊 Battle Statistics")
         st.markdown("*The numbers that tell the story of this epic rivalry*")
-        st.plotly_chart(create_head_to_head_chart(player1, player2, p1_win_rate, p2_win_rate), use_container_width=True)
+        st.plotly_chart(create_head_to_head_chart(player1, player2, p1_win_rate, p2_win_rate), width="stretch")
 
         # Add some fun facts
         total_matches = h2h_stats["total_matches"]

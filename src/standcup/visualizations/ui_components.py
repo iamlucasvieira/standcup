@@ -71,12 +71,12 @@ def render_detailed_stats(player_stats: pd.Series) -> None:
     with col1:
         st.markdown("#### 🎯 Win Rate Gauge")
         win_rate_gauge = create_win_rate_gauge(player_stats["win_rate"])
-        st.plotly_chart(win_rate_gauge, use_container_width=True)
+        st.plotly_chart(win_rate_gauge, width="stretch")
 
     with col2:
         st.markdown("#### ⚽ Goals Analysis")
         goals_chart = create_goals_chart(int(player_stats["goals_for"]), int(player_stats["goals_against"]))
-        st.plotly_chart(goals_chart, use_container_width=True)
+        st.plotly_chart(goals_chart, width="stretch")
 
     # Additional metrics below charts
     st.markdown("#### 📋 Match Breakdown")

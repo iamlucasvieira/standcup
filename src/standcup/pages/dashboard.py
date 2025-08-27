@@ -7,18 +7,20 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from standcup.models import StandcupData
+from standcup.models import MatchType, StandcupData
+from standcup.utils import calculate_player_stats
 from standcup.wilson_score import get_wilson_win_rate
 
 
-def create_win_rate_chart(stats_df: pd.DataFrame) -> go.Figure:
+def create_win_rate_chart(stats_df: pd.DataFrame, match_type_filter: str | None = None) -> go.Figure:
     """Create a bar chart of win rates."""
+    title_suffix = "" if match_type_filter is None else f" ({match_type_filter})"
     fig = px.bar(
         stats_df.sort_values("win_rate", ascending=True),
         x="win_rate",
         y="player_name",
         orientation="h",
-        title="Win Rate by Player (%)",
+        title=f"Win Rate by Player (%){title_suffix}",
         labels={"win_rate": "Win Rate (%)", "player_name": "Player"},
         color="win_rate",
         color_continuous_scale="viridis",
@@ -27,7 +29,7 @@ def create_win_rate_chart(stats_df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def create_goals_chart(stats_df: pd.DataFrame) -> go.Figure:
+def create_goals_chart(stats_df: pd.DataFrame, match_type_filter: str | None = None) -> go.Figure:
     """Create a chart showing goals for vs against."""
     fig = go.Figure()
 
@@ -39,8 +41,9 @@ def create_goals_chart(stats_df: pd.DataFrame) -> go.Figure:
         go.Bar(name="Goals Against", x=stats_df["player_name"], y=stats_df["goals_against"], marker_color="lightcoral")
     )
 
+    title_suffix = "" if match_type_filter is None else f" ({match_type_filter})"
     fig.update_layout(
-        title="Goals For vs Goals Against by Player",
+        title=f"Goals For vs Goals Against by Player{title_suffix}",
         xaxis_title="Player",
         yaxis_title="Goals",
         barmode="group",
@@ -49,9 +52,17 @@ def create_goals_chart(stats_df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def create_league_activity_chart(data: StandcupData) -> go.Figure:
+def create_league_activity_chart(data: StandcupData, match_type_filter: str | None = None) -> go.Figure:
     """Create a chart showing league activity and match competitiveness over time."""
     matches_df = data.to_matches_df()
+
+    if matches_df.empty:
+        return go.Figure()
+
+    # Apply match type filter using match_type column directly
+    if match_type_filter is not None:
+        matches_df = matches_df[matches_df["match_type"] == match_type_filter]
+    # None requires no filtering
 
     if matches_df.empty:
         return go.Figure()
@@ -107,8 +118,9 @@ def create_league_activity_chart(data: StandcupData) -> go.Figure:
         )
     )
 
+    title_suffix = "" if match_type_filter is None else f" ({match_type_filter})"
     fig.update_layout(
-        title="League Activity & Match Trends Over Time",
+        title=f"League Activity & Match Trends Over Time{title_suffix}",
         xaxis_title="Date",
         yaxis={"title": "Goals", "side": "left"},
         yaxis2={"title": "Number of Matches", "side": "right", "overlaying": "y"},
@@ -120,9 +132,16 @@ def create_league_activity_chart(data: StandcupData) -> go.Figure:
     return fig
 
 
-def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
+def create_win_rate_over_time_chart(data: StandcupData, match_type_filter: str | None = None) -> go.Figure:
     """Create a chart showing win rate progression over time for each player."""
     player_matches = data.to_player_match_df()
+
+    if player_matches.empty:
+        return go.Figure()
+
+    # Apply match type filter using match_type column directly
+    if match_type_filter is not None:
+        player_matches = player_matches[player_matches["match_type"] == match_type_filter]
 
     if player_matches.empty:
         return go.Figure()
@@ -177,8 +196,9 @@ def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
             )
         )
 
+    title_suffix = "" if match_type_filter is None else f" ({match_type_filter})"
     fig.update_layout(
-        title="Win Rate Progression Over Time",
+        title=f"Win Rate Progression Over Time{title_suffix}",
         xaxis_title="Date",
         yaxis_title="Win Rate (%)",
         height=500,
@@ -188,45 +208,6 @@ def create_win_rate_over_time_chart(data: StandcupData) -> go.Figure:
     )
 
     return fig
-
-
-def get_league_status_message(stats_df: pd.DataFrame, matches_df: pd.DataFrame) -> tuple[str, str]:
-    """Generate dynamic status message based on league activity."""
-    if stats_df.empty or matches_df.empty:
-        return (
-            "🚀 Ready to Kick Off!",
-            "Your table football adventure is about to begin! Start playing matches to see epic stats and rivalries unfold.",
-        )
-
-    total_matches = len(matches_df)
-    avg_goals = matches_df["total_goals"].mean() if not matches_df.empty else 0
-    top_win_rate = stats_df["win_rate"].max()
-
-    if total_matches < 10:
-        return (
-            "🌱 Growing League",
-            f"Just getting started with {total_matches} matches! The competition is heating up...",
-        )
-    elif total_matches < 50:
-        return (
-            "⚽ Active League",
-            f"{total_matches} matches played! The battle for supremacy continues with an average of {avg_goals:.1f} goals per match!",
-        )
-    elif avg_goals > 8:
-        return (
-            "🔥 High-Octane League",
-            f"This league is on fire! {avg_goals:.1f} goals per match - pure attacking football at its finest!",
-        )
-    elif top_win_rate > 80:
-        return (
-            "👑 Dominated League",
-            f"We have a champion! Someone's absolutely crushing it with {top_win_rate:.1f}% win rate!",
-        )
-    else:
-        return (
-            "⚔️ Competitive League",
-            f"Epic battles across {total_matches} matches! Every game matters in this tight competition!",
-        )
 
 
 def get_top_player_personality(stats_df: pd.DataFrame) -> str:
@@ -252,13 +233,27 @@ def get_top_player_personality(stats_df: pd.DataFrame) -> str:
 
 def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df: pd.DataFrame) -> None:
     """Render the overview/dashboard page."""
-    status_title, status_msg = get_league_status_message(stats_df, matches_df)
+    # Match type filter
+    filter_options = ["All", MatchType.ONE_V_ONE, MatchType.TWO_V_TWO]
+    selected_filter = st.segmented_control(
+        "📊 **Match Type Filter**",
+        filter_options,
+        help="Filter statistics and charts by match type",
+        default=MatchType.TWO_V_TWO,
+    )
 
-    st.markdown(f"### {status_title}")
-    st.markdown(status_msg)
+    # Convert "All" to None for internal use
+    match_type_filter = None if selected_filter == "All" else selected_filter
+
+    # Recalculate stats based on filter
+    filtered_stats_df = calculate_player_stats(data, match_type_filter)
+
+    # Filter matches DataFrame using match_type column directly
+    filtered_matches_df = matches_df.copy()
+    if match_type_filter is not None:
+        filtered_matches_df = matches_df[matches_df["match_type"] == match_type_filter]
 
     st.divider()
-
     # Key metrics with enhanced styling
     st.markdown("#### 🏆 Key Statistics")
     col1, col2, col3, col4 = st.columns(4)
@@ -272,8 +267,8 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
         st.metric(label="⚽ Total Matches", value=total_matches, help="Total matches played across all game types")
 
     with col3:
-        if not matches_df.empty:
-            avg_goals = matches_df["total_goals"].mean()
+        if not filtered_matches_df.empty:
+            avg_goals = filtered_matches_df["total_goals"].mean()
             if avg_goals >= 9:
                 goal_msg = "🔥 Explosive!"
             elif avg_goals >= 8:
@@ -291,11 +286,11 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
             st.metric("🥅 Goals/Match", "0.0")
 
     with col4:
-        if not stats_df.empty:
-            top_player_idx = stats_df["win_rate"].idxmax()
-            top_player = stats_df.loc[top_player_idx, "player_name"]
-            top_win_rate = stats_df.loc[top_player_idx, "win_rate"]
-            personality = get_top_player_personality(stats_df)
+        if not filtered_stats_df.empty:
+            top_player_idx = filtered_stats_df["win_rate"].idxmax()
+            top_player = filtered_stats_df.loc[top_player_idx, "player_name"]
+            top_win_rate = filtered_stats_df.loc[top_player_idx, "win_rate"]
+            personality = get_top_player_personality(filtered_stats_df)
             st.metric(
                 label="🌟 League Champion",
                 value=top_player,
@@ -308,27 +303,27 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
     st.divider()
 
     # Charts section with improved presentation
-    if not stats_df.empty:
+    if not filtered_stats_df.empty:
         st.markdown("#### 📈 Performance Analytics")
 
         # Win rate progression chart - full width
         st.markdown("**Win Rate Progression Over Time**")
-        st.plotly_chart(create_win_rate_over_time_chart(data), use_container_width=True)
+        st.plotly_chart(create_win_rate_over_time_chart(data, match_type_filter), width="stretch")
 
         # Side-by-side performance charts
         col1, col2 = st.columns(2, gap="medium")
 
         with col1:
             st.markdown("**Player Win Rates**")
-            st.plotly_chart(create_win_rate_chart(stats_df), use_container_width=True)
+            st.plotly_chart(create_win_rate_chart(filtered_stats_df, match_type_filter), width="stretch")
 
         with col2:
             st.markdown("**Goal Statistics**")
-            st.plotly_chart(create_goals_chart(stats_df), use_container_width=True)
+            st.plotly_chart(create_goals_chart(filtered_stats_df, match_type_filter), width="stretch")
 
         # League activity and trends
         st.markdown("**League Activity & Match Trends**")
-        st.plotly_chart(create_league_activity_chart(data), use_container_width=True)
+        st.plotly_chart(create_league_activity_chart(data, match_type_filter), width="stretch")
     else:
         st.info("🎮 Ready Player One?")
         st.markdown("""🏆 **Your table football journey starts here!**
