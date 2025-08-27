@@ -12,16 +12,21 @@ from standcup.utils import calculate_player_stats
 from standcup.win_rate_methods import WinRateMethod, calculate_win_rate, get_method_display_name
 
 
-def create_win_rate_chart(stats_df: pd.DataFrame, match_type_filter: str | None = None) -> go.Figure:
+def create_win_rate_chart(
+    stats_df: pd.DataFrame,
+    match_type_filter: str | None = None,
+    win_rate_method: WinRateMethod = WinRateMethod.WILSON_CENTER,
+) -> go.Figure:
     """Create a bar chart of win rates."""
+    method_display = get_method_display_name(win_rate_method)
     title_suffix = "" if match_type_filter is None else f" ({match_type_filter})"
     fig = px.bar(
         stats_df.sort_values("win_rate", ascending=True),
         x="win_rate",
         y="player_name",
         orientation="h",
-        title=f"Win Rate by Player (%){title_suffix}",
-        labels={"win_rate": "Win Rate (%)", "player_name": "Player"},
+        title=f"{method_display} by Player{title_suffix}",
+        labels={"win_rate": f"{method_display} (%)", "player_name": "Player"},
         color="win_rate",
         color_continuous_scale="viridis",
     )
@@ -162,6 +167,9 @@ def create_win_rate_over_time_chart(
 
     fig = go.Figure()
 
+    # Get method display name for titles and hover text
+    method_display = get_method_display_name(win_rate_method)
+
     # Calculate rolling win rate for each player
     for player_id in player_matches["player_id"].unique():
         player_data = player_matches[player_matches["player_id"] == player_id].copy()
@@ -200,11 +208,12 @@ def create_win_rate_over_time_chart(
             )
         )
 
+    # Create dynamic title based on method and filter
     title_suffix = "" if match_type_filter is None else f" ({match_type_filter})"
     fig.update_layout(
-        title=f"Win Rate Progression Over Time{title_suffix}",
+        title=f"{method_display} Progression Over Time{title_suffix}",
         xaxis_title="Date",
-        yaxis_title="Win Rate (%)",
+        yaxis_title=f"{method_display} (%)",
         height=500,
         hovermode="x unified",
         legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 0.01},
@@ -325,26 +334,28 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
     if not filtered_stats_df.empty:
         st.markdown("#### 📈 Performance Analytics")
 
-        # Win rate progression chart - full width
-        st.markdown("**Win Rate Progression Over Time**")
+        # Leaderboard chart - full width (most important)
+        st.markdown("**🏆 Player Leaderboard**")
+        st.plotly_chart(
+            create_win_rate_chart(filtered_stats_df, match_type_filter, selected_win_rate_method), width="stretch"
+        )
+
+        # Performance over time chart - full width
+        st.markdown("**📈 Performance Over Time**")
         st.plotly_chart(
             create_win_rate_over_time_chart(data, match_type_filter, selected_win_rate_method), width="stretch"
         )
 
-        # Side-by-side performance charts
+        # Side-by-side secondary charts
         col1, col2 = st.columns(2, gap="medium")
 
         with col1:
-            st.markdown("**Player Win Rates**")
-            st.plotly_chart(create_win_rate_chart(filtered_stats_df, match_type_filter), width="stretch")
-
-        with col2:
-            st.markdown("**Goal Statistics**")
+            st.markdown("**⚽ Goal Statistics**")
             st.plotly_chart(create_goals_chart(filtered_stats_df, match_type_filter), width="stretch")
 
-        # League activity and trends
-        st.markdown("**League Activity & Match Trends**")
-        st.plotly_chart(create_league_activity_chart(data, match_type_filter), width="stretch")
+        with col2:
+            st.markdown("**📊 League Activity & Trends**")
+            st.plotly_chart(create_league_activity_chart(data, match_type_filter), width="stretch")
     else:
         st.info("🎮 Ready Player One?")
         st.markdown("""🏆 **Your table football journey starts here!**
