@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 
 from standcup.models import StandcupData
-from standcup.wilson_score import get_wilson_win_rate
+from standcup.win_rate_methods import WinRateMethod, calculate_win_rate
 
 
 @st.cache_data
@@ -21,7 +21,11 @@ def load_data() -> StandcupData:
         return StandcupData.from_yaml(Path(__file__).parent / "data.yml")
 
 
-def calculate_player_stats(data: StandcupData, match_type_filter: str | None = None) -> pd.DataFrame:
+def calculate_player_stats(
+    data: StandcupData,
+    match_type_filter: str | None = None,
+    win_rate_method: WinRateMethod = WinRateMethod.WILSON_CENTER,
+) -> pd.DataFrame:
     """Calculate comprehensive player statistics."""
     player_df = data.to_player_match_df()
 
@@ -53,9 +57,9 @@ def calculate_player_stats(data: StandcupData, match_type_filter: str | None = N
     # Flatten column names
     stats.columns = ["matches_played", "wins", "losses", "goals_for", "goals_against"]
 
-    # Calculate additional metrics using Wilson score interval for more accurate win rates
+    # Calculate win rates using the specified method
     stats["win_rate"] = stats.apply(
-        lambda row: get_wilson_win_rate(int(row["wins"]), int(row["matches_played"]), method="center"), axis=1
+        lambda row: calculate_win_rate(int(row["wins"]), int(row["matches_played"]), win_rate_method), axis=1
     ).round(1)
     stats["goal_difference"] = stats["goals_for"] - stats["goals_against"]
     stats["avg_goals_per_match"] = (stats["goals_for"] / stats["matches_played"]).round(2)

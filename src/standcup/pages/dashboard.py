@@ -9,7 +9,7 @@ import streamlit as st
 
 from standcup.models import MatchType, StandcupData
 from standcup.utils import calculate_player_stats
-from standcup.wilson_score import get_wilson_win_rate
+from standcup.win_rate_methods import WinRateMethod, calculate_win_rate, get_method_display_name
 
 
 def create_win_rate_chart(stats_df: pd.DataFrame, match_type_filter: str | None = None) -> go.Figure:
@@ -132,7 +132,11 @@ def create_league_activity_chart(data: StandcupData, match_type_filter: str | No
     return fig
 
 
-def create_win_rate_over_time_chart(data: StandcupData, match_type_filter: str | None = None) -> go.Figure:
+def create_win_rate_over_time_chart(
+    data: StandcupData,
+    match_type_filter: str | None = None,
+    win_rate_method: WinRateMethod = WinRateMethod.WILSON_CENTER,
+) -> go.Figure:
     """Create a chart showing win rate progression over time for each player."""
     player_matches = data.to_player_match_df()
 
@@ -163,12 +167,12 @@ def create_win_rate_over_time_chart(data: StandcupData, match_type_filter: str |
         player_data = player_matches[player_matches["player_id"] == player_id].copy()
         player_name = players_dict.get(player_id, player_id)
 
-        # Calculate cumulative Wilson score win rate for more accurate progression tracking
+        # Calculate cumulative win rate for progression tracking
         player_data["cumulative_wins"] = player_data["won"].cumsum()
         player_data["cumulative_matches"] = range(1, len(player_data) + 1)
         player_data["win_rate"] = player_data.apply(
-            lambda row: get_wilson_win_rate(
-                int(row["cumulative_wins"]), int(row["cumulative_matches"]), method="center"
+            lambda row: calculate_win_rate(
+                int(row["cumulative_wins"]), int(row["cumulative_matches"]), win_rate_method
             ),
             axis=1,
         ).round(1)
@@ -233,20 +237,35 @@ def get_top_player_personality(stats_df: pd.DataFrame) -> str:
 
 def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df: pd.DataFrame) -> None:
     """Render the overview/dashboard page."""
-    # Match type filter
-    filter_options = ["All", MatchType.ONE_V_ONE, MatchType.TWO_V_TWO]
-    selected_filter = st.segmented_control(
-        "📊 **Match Type Filter**",
-        filter_options,
-        help="Filter statistics and charts by match type",
-        default=MatchType.TWO_V_TWO,
-    )
+    # Filters section
+    col1, col2, *_ = st.columns(4)
+
+    with col1:
+        # Match type filter
+        filter_options = ["All", MatchType.ONE_V_ONE, MatchType.TWO_V_TWO]
+        selected_filter = st.segmented_control(
+            "📊 **Match Type Filter**",
+            filter_options,
+            help="Filter statistics and charts by match type",
+            default=MatchType.TWO_V_TWO,
+        )
+
+    with col2:
+        # Win rate method filter
+        win_rate_options = list(WinRateMethod)
+        selected_win_rate_method = st.selectbox(
+            "🧮 **Win Rate Method**",
+            win_rate_options,
+            index=win_rate_options.index(WinRateMethod.WILSON_CENTER),
+            format_func=get_method_display_name,
+            help="Choose how win rates are calculated. Different methods handle small sample sizes differently.",
+        )
 
     # Convert "All" to None for internal use
     match_type_filter = None if selected_filter == "All" else selected_filter
 
-    # Recalculate stats based on filter
-    filtered_stats_df = calculate_player_stats(data, match_type_filter)
+    # Recalculate stats based on filters
+    filtered_stats_df = calculate_player_stats(data, match_type_filter, selected_win_rate_method)
 
     # Filter matches DataFrame using match_type column directly
     filtered_matches_df = matches_df.copy()
@@ -308,7 +327,9 @@ def render_overview_page(data: StandcupData, stats_df: pd.DataFrame, matches_df:
 
         # Win rate progression chart - full width
         st.markdown("**Win Rate Progression Over Time**")
-        st.plotly_chart(create_win_rate_over_time_chart(data, match_type_filter), width="stretch")
+        st.plotly_chart(
+            create_win_rate_over_time_chart(data, match_type_filter, selected_win_rate_method), width="stretch"
+        )
 
         # Side-by-side performance charts
         col1, col2 = st.columns(2, gap="medium")
